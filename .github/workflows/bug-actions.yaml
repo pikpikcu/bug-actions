@@ -101,8 +101,8 @@ jobs:
 
       - name: Commit results to Github
         run: |
-          git config --local user.email "3xploitdb2067@gmail.com"
-          git config --global user.name "blacktool"
+          git config --local user.email "YOUR EMAIL GITHUB"
+          git config --global user.name "NAME GITHUB"
           git commit -m "PD-Actions report" -a --allow-empty
 
       - name: Push changes
