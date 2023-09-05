@@ -1,0 +1,63 @@
+name: 🪲 Bug Bounty 🕸Crawling
+
+on:
+#    schedule:
+#      - cron: '0 0 * * *'
+# Remove both comments to run this action on daily basis.
+    workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@master
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Setup golang
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.21
+
+      - name: Cache Go
+        id: cache-go
+        uses: actions/cache@v2
+        with:
+          path: /home/runner/go
+          key: ${{ runner.os }}-go
+
+      - name: Setting up Tools Bugbounty
+        if: steps.cache-go.outputs.cache-hit != 'true'
+        env:
+          GO111MODULE: on
+        run: |
+          go install github.com/bp0lr/gauplus@latest
+          go install -v github.com/tomnomnom/anew@latest
+          go install github.com/tomnomnom/waybackurls@latest
+          go install github.com/projectdiscovery/katana/cmd/katana@latest
+        shell: bash
+          
+      - name: 🪲 Crawling
+        run: |
+          TARGET=`cat input/domains.txt`
+          katana -list "domain/$TARGET/subfinder_subdomains.txt" -d 10 -jc -ct 14 -retry 10  -silent -o "domain/$TARGET/katana.txt" 
+          cat "domain/$TARGET/subfinder_subdomains.txt" | gauplus -subs | anew  "domain/$TARGET/gauplus.txt"
+          cat "domain/$TARGET/subfinder_subdomains.txt" | waybackurls | anew  "domain/$TARGET/waybackurls.txt"
+          git add "domain/$TARGET/gauplus.txt"
+          git add "domain/$TARGET/waybackurls.txt"
+          git add "domain/$TARGET/katana.txt"
+        shell: bash
+
+      - name: 👨🏻‍💻 Commit results to Github
+        run: |
+          git config --local user.email "YOUR_EMAIL_GITHUB"
+          git config --global user.name "USERNAME"
+          git commit -m "PD-Actions report" -a --allow-empty
+
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          force_with_lease: true

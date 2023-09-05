@@ -1,0 +1,63 @@
+name: 🐝 XSS - Vulnerabilty Scanner
+
+on:
+#    schedule:
+#      - cron: '0 0 * * *'
+# Remove both comments to run this action on daily basis.
+    workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@master
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Setup golang
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.21
+          
+      - name: Setup Dependencies
+        run: |
+          pip3 install uro
+        shell: bash
+
+      - name: Cache Go
+        id: cache-go
+        uses: actions/cache@v2
+        with:
+          path: /home/runner/go
+          key: ${{ runner.os }}-go
+
+      - name: Setting up Tools Bugbounty
+        if: steps.cache-go.outputs.cache-hit != 'true'
+        env:
+          GO111MODULE: on
+        run: |
+          go install github.com/hahwul/dalfox/v2@latest
+          go install -v github.com/tomnomnom/anew@latest
+        shell: bash
+
+      - name: 🐝 XSS - Vulnerabilty Scanner
+        run: |
+          TARGET=`cat input/domains.txt`
+          cat "domain/$TARGET/gauplus.txt" "domain/$TARGET/waybackurls.txt" "domain/$TARGET/katana.txt" | anew "domain/$TARGET/crawling-all.txt"
+          cat "domain/$TARGET/crawling-all.txt" | grep -v "png\|jpg\|css\|js\|gif\|txt" | grep "=" | dalfox pipe --deep-domxss --multicast -o "domain/$TARGET/xss-vulnerabilty.txt"
+          git add "domain/$TARGET/xss-vulnerabilty.txt"
+        shell: bash
+
+      - name: 👨🏻‍💻 Commit results to Github
+        run: |
+          git config --local user.email "YOUR_EMAIL_GITHUB"
+          git config --global user.name "USERNAME"
+          git commit -m "PD-Actions report" -a --allow-empty
+
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          force_with_lease: true

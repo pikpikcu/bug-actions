@@ -1,0 +1,50 @@
+name: 📸 Get All Nuclei Templates
+
+on:
+#    schedule:
+#      - cron: '0 0 * * *'
+# Remove both comments to run this action on daily basis.
+    workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 👨🏻‍💻 Checkout Repo
+        uses: actions/checkout@master
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Setup Dependencies
+        run: sudo apt-get install git
+
+      - name: 📸 Subdomain Screnshoot
+        run: |
+          rm -rf all-templates/
+          mkdir all-templates
+          git clone https://github.com/projectdiscovery/nuclei-templates all-templates/default
+          git clone https://github.com/Akokonunes/Private-Nuclei-Templates all-templates/Private-Nuclei-Templates
+          git clone https://github.com/projectdiscovery/fuzzing-templates all-templates/fuzzing-templates
+          git clone https://github.com/notnotnotveg/nuclei-custom-templates all-templates/nuclei-custom-templates
+          git clone https://github.com/geeknik/the-nuclei-templates all-templates/the-nuclei-templates
+          rm -rf all-templates/default/.git
+          rm -rf all-templates/default/.github
+          rm -rf all-templates/Private-Nuclei-Templates/.git
+          rm -rf all-templates/fuzzing-templates/.git
+          rm -rf all-templates/nuclei-custom-templates/.git
+          rm -rf all-templates/the-nuclei-templates/.git
+          git add all-templates/*
+        shell: bash
+
+      - name: 👨🏻‍💻 Commit results to Github
+        run: |
+          git config --local user.email "YOUR_EMAIL_GITHUB"
+          git config --global user.name "USERNAME"
+          git commit -m "PD-Actions report" -a --allow-empty
+
+      - name: 👨🏻‍💻 Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          force_with_lease: true

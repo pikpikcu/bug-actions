@@ -1,0 +1,58 @@
+name: 📸 Subdomain Screnshoot
+
+on:
+#    schedule:
+#      - cron: '0 0 * * *'
+# Remove both comments to run this action on daily basis.
+    workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 👨🏻‍💻 Checkout Repo
+        uses: actions/checkout@master
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: 👨🏻‍💻 Setup golang
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.21
+          
+      - name: 👨🏻‍💻 Cache Go
+        id: cache-go
+        uses: actions/cache@v2
+        with:
+          path: /home/runner/go
+          key: ${{ runner.os }}-go
+
+      - name: 🛠 Setting up Tools Bugbounty
+        if: steps.cache-go.outputs.cache-hit != 'true'
+        env:
+          GO111MODULE: on
+        run: |
+          go install github.com/sensepost/gowitness@latest
+        shell: bash
+
+      - name: 📸 Subdomain Screnshoot
+        run: |
+          TARGET=`cat input/domains.txt`
+          cd "domain/$TARGET/"; gowitness file -f subdomains.txt --timeout 30  >> gowitnes   
+          git add screenshots/*
+          git add gowitness.sqlite3
+          git add gowitnes
+        shell: bash
+
+      - name: 👨🏻‍💻 Commit results to Github
+        run: |
+          git config --local user.email "YOUR_EMAIL_GITHUB"
+          git config --global user.name "USERNAME"
+          git commit -m "PD-Actions report" -a --allow-empty
+
+      - name: 👨🏻‍💻 Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          force_with_lease: true
