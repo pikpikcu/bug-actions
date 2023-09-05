@@ -11,3 +11,4 @@
 ```
 
 #### Input Target Single domain `input/domains.txt`
+#### Note: Remove `actions/caches` after scanning to avoid errors.
