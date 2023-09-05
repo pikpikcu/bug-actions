@@ -9,3 +9,5 @@
           git config --global user.name "USERNAME"
           git commit -m "PD-Actions report" -a --allow-empty
 ```
+
+#### Input Target Single domain `input/domains.txt`
