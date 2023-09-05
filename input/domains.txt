@@ -1,2 +1,1 @@
-smartmockups.com
-
+example.com
